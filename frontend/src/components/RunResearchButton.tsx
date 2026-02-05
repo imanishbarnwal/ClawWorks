@@ -3,15 +3,15 @@
 import { runResearchTask } from "@/lib/runResearchTask";
 import { useState } from "react";
 import { useWorkflow } from "@/context/WorkflowContext";
-import { useAccount } from "wagmi";
+// Removed wagmi imports to ensure clean separation as requested in earlier steps
+// import { useAccount } from "wagmi";
 
 export default function RunResearchButton() {
-    const { isConnected } = useAccount();
+    // const { isConnected } = useAccount(); // Connection check is now implicit in runResearchTask
     const { addLog, clearLogs } = useWorkflow();
     const [loading, setLoading] = useState(false);
 
     async function handleClick() {
-        // We defer connection check to runResearchTask which calls connectWallet()
         try {
             setLoading(true);
             clearLogs(); // Clear previous runs
@@ -29,12 +29,27 @@ export default function RunResearchButton() {
     }
 
     return (
-        <button
-            onClick={handleClick}
-            disabled={loading}
-            className="rounded-xl bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
-        >
-            {loading ? "Running Research Task..." : "Run Research Task"}
-        </button>
+        <div className="flex flex-col items-center gap-2">
+            <button
+                onClick={handleClick}
+                disabled={loading}
+                className={`rounded-xl px-6 py-3 text-white font-semibold transition-all shadow-lg ${loading
+                    ? "bg-blue-800 cursor-not-allowed opacity-75"
+                    : "bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/25"
+                    }`}
+            >
+                {loading ? (
+                    <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        Running Research Task...
+                    </span>
+                ) : (
+                    "Run Research Task"
+                )}
+            </button>
+            <p className="text-xs text-gray-500 font-medium tracking-wide">
+                1 click &rarr; 3 agents hired &rarr; 4 on-chain transactions
+            </p>
+        </div>
     );
 }

@@ -33,6 +33,28 @@ export function BalancesTable() {
     const paymentToken = routerConfig.data?.[0].result as `0x${string}` | undefined;
     const protocolTreasury = routerConfig.data?.[1].result as `0x${string}` | undefined;
 
+    // 1b. Fetch Token Metadata (Decimals & Symbol)
+    const tokenConfig = useReadContracts({
+        contracts: [
+            {
+                address: paymentToken,
+                abi: ERC20_ABI as any,
+                functionName: 'decimals',
+            },
+            {
+                address: paymentToken,
+                abi: ERC20_ABI as any,
+                functionName: 'symbol',
+            }
+        ],
+        query: {
+            enabled: !!paymentToken
+        }
+    });
+
+    const decimals = tokenConfig.data?.[0].result as number | undefined ?? 18;
+    const symbol = tokenConfig.data?.[1].result as string | undefined ?? "AUSD";
+
     // 2. Prepare Balance Calls
     // We need balances for: All Agents + Protocol Treasury
     const agentAddresses = AGENT_IDS.map(id => AGENT_REGISTRY[id].treasury_address);
@@ -84,8 +106,8 @@ export function BalancesTable() {
         AGENT_IDS.forEach((id, index) => {
             const result = balanceData[index];
             if (result.status === 'success' && result.result) {
-                // Assuming 18 decimals for AUSD
-                agentBalances[id] = formatUnits(result.result as bigint, 18);
+                // Use dynamic decimals
+                agentBalances[id] = formatUnits(result.result as bigint, decimals);
             } else {
                 agentBalances[id] = "0.0";
             }
@@ -97,7 +119,7 @@ export function BalancesTable() {
     if (protocolTreasury && balanceData && balanceData.length > AGENT_IDS.length) {
         const result = balanceData[AGENT_IDS.length];
         if (result.status === 'success' && result.result) {
-            protocolBalance = formatUnits(result.result as bigint, 18);
+            protocolBalance = formatUnits(result.result as bigint, decimals);
         }
     }
 
@@ -125,7 +147,7 @@ export function BalancesTable() {
                                 <div className="text-[10px] text-gray-500 uppercase tracking-wider">{agent.role}</div>
                             </div>
                             <div className="font-mono text-emerald-400 font-medium">
-                                {formatBal(rawBal)} <span className="text-xs text-gray-600">AUSD</span>
+                                {formatBal(rawBal)} <span className="text-xs text-gray-600">{symbol}</span>
                             </div>
                         </div>
                     );
@@ -136,7 +158,7 @@ export function BalancesTable() {
                     <div className="flex justify-between items-center px-2">
                         <div className="text-yellow-500 font-semibold">Protocol Revenue</div>
                         <div className="font-mono text-yellow-400 font-bold">
-                            {formatBal(protocolBalance)} <span className="text-xs text-yellow-700">AUSD</span>
+                            {formatBal(protocolBalance)} <span className="text-xs text-yellow-700">{symbol}</span>
                         </div>
                     </div>
                 </div>

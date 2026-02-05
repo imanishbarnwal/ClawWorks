@@ -23,8 +23,8 @@ export function Timeline() {
                     logs.map((log) => (
                         <div key={log.id} className="relative pl-6 border-l-2 border-gray-800 last:border-0 pb-4 last:pb-0 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-2 ${log.status === 'success' ? 'bg-green-500 border-green-900' :
-                                    log.status === 'error' ? 'bg-red-500 border-red-900' :
-                                        'bg-blue-500 border-blue-900 animate-pulse'
+                                log.status === 'error' ? 'bg-red-500 border-red-900' :
+                                    'bg-blue-500 border-blue-900 animate-pulse'
                                 }`}></div>
 
                             <div className="flex flex-col gap-1">
@@ -32,6 +32,14 @@ export function Timeline() {
                                     <span className="text-sm font-medium text-gray-200">{log.task}</span>
                                     <span className="text-xs text-gray-500 font-mono">{log.timestamp}</span>
                                 </div>
+
+                                {log.decision && (
+                                    <div className="bg-purple-900/10 border-l-2 border-purple-500 pl-2 py-1 my-2 rounded-r text-xs">
+                                        <div className="text-purple-300 font-semibold mb-0.5">Agent Decision Protocol:</div>
+                                        <div className="text-gray-400">Reason: <span className="italic text-gray-300">{log.decision.reason}</span></div>
+                                        <div className="text-gray-400">Est. Cost: <span className="font-mono text-purple-300">{log.decision.cost} AUSD</span></div>
+                                    </div>
+                                )}
 
                                 <div className="text-xs text-gray-400">
                                     Paid <span className="text-emerald-400 font-mono">{log.amount} AUSD</span> to {log.agentName}

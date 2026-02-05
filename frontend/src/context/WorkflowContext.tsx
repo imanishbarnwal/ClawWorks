@@ -10,6 +10,10 @@ export interface LogEntry {
     txHash?: string;
     status: "pending" | "success" | "error";
     timestamp: string;
+    decision?: {
+        reason: string;
+        cost: string;
+    };
 }
 
 interface WorkflowContextType {

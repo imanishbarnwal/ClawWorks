@@ -27,6 +27,10 @@ export async function runResearchTask(
         amount: string;
         txHash?: string;
         status: "pending" | "success" | "error";
+        decision?: {
+            reason: string;
+            cost: string;
+        };
     }) => void
 ) {
     console.log("🚀 Starting Research Task Workflow (Ethers v6)");
@@ -88,16 +92,85 @@ export async function runResearchTask(
 
     const ausd = new ethers.Contract(ausdAddress, ERC20_ABI, signer);
 
-    // 5. Allowance check
+    // ==========================================
+    // NEW STEP: User Funds Research Agent (1.00 AUSD)
+    // ==========================================
+    const fundingAmount = ethers.parseEther("1.0");
+
+    console.log("Checking user allowance for funding...");
+    const userAllowance = await ausd.allowance(address, PROTOCOL_ROUTER_ADDRESS);
+
+    if (userAllowance < fundingAmount) {
+        console.log("📝 User approving Router...");
+        onLog({
+            task: "Approving AUSD Spend",
+            agentName: "User (You)",
+            amount: "0.00",
+            status: "pending"
+        });
+
+        try {
+            const approveTx = await ausd.approve(PROTOCOL_ROUTER_ADDRESS, ethers.MaxUint256);
+            console.log("User Approval Tx:", approveTx.hash);
+            await approveTx.wait();
+            console.log("✅ User Approval Confirmed");
+        } catch (err: any) {
+            console.error("User Approval Failed:", err);
+            throw new Error(`User Approval Failed: ${getRevertReason(err)}`);
+        }
+    }
+
+    console.log("💸 Funding Research Agent...");
+    onLog({
+        task: "Funding Research Agent",
+        agentName: "User (You)",
+        amount: "1.00",
+        status: "pending"
+    });
+
+    try {
+        const fundTx = await router.processPayment(
+            researchTreasuryAddr,
+            fundingAmount,
+            "Initial Capital Infection"
+        );
+        console.log("Funding Tx:", fundTx.hash);
+        await fundTx.wait();
+
+        onLog({
+            task: "Funding Complete",
+            agentName: "User (You)",
+            amount: "1.00",
+            txHash: fundTx.hash,
+            status: "success"
+        });
+        console.log("✅ Funding Confirmed");
+
+    } catch (err: any) {
+        console.error("Funding Failed:", err);
+        onLog({
+            task: "Funding Failed",
+            agentName: "User (You)",
+            amount: "1.00",
+            status: "error"
+        });
+        throw new Error(`Funding Failed: ${getRevertReason(err)}`);
+    }
+
+    // ==========================================
+    // EXISTING FLOW: Research Agent Pays Downstream
+    // ==========================================
+
+    // 5. Allowance check (Research Treasury -> Router)
     const currentAllowance = await ausd.allowance(
         researchTreasuryAddr,
         PROTOCOL_ROUTER_ADDRESS
     );
 
-    const requiredAmount = ethers.parseEther("1.0");
+    const requiredAmount = ethers.parseEther("1.0"); // Need enough for downstream payments
 
     if (currentAllowance < requiredAmount) {
-        console.log("📝 Approving router to spend AUSD");
+        console.log("📝 Approving router to spend AUSD (Treasury)...");
 
         onLog({
             task: "Approving Payment Router",
@@ -112,21 +185,49 @@ export async function runResearchTask(
             ethers.MaxUint256
         );
 
-        console.log("Approval tx:", approveTx.hash);
+        console.log("Treasury Approval tx:", approveTx.hash);
         await approveTx.wait();
-        console.log("✅ Approval confirmed");
+        console.log("✅ Treasury Approval confirmed");
     } else {
-        console.log("✅ Allowance already sufficient");
+        console.log("✅ Treasury Allowance already sufficient");
     }
 
     // 6. Payment plan
+    // 6. Payment plan with Decision Logic
     const payments = [
-        { recipient: dataAgentAddr, amount: "0.20", task: "Data Collection", agentName: "Data Agent" },
-        { recipient: seoAgentAddr, amount: "0.10", task: "SEO Optimization", agentName: "SEO Agent" },
-        { recipient: formattingAgentAddr, amount: "0.05", task: "Formatting", agentName: "Formatting Agent" }
+        {
+            recipient: dataAgentAddr,
+            amount: "0.20",
+            task: "Data Collection",
+            agentName: "Data Agent",
+            decision: {
+                reason: "Needs verified supply chain data sources",
+                cost: "0.20"
+            }
+        },
+        {
+            recipient: seoAgentAddr,
+            amount: "0.10",
+            task: "SEO Optimization",
+            agentName: "SEO Agent",
+            decision: {
+                reason: "Optimizing report for search ranking distribution",
+                cost: "0.10"
+            }
+        },
+        {
+            recipient: formattingAgentAddr,
+            amount: "0.05",
+            task: "Formatting",
+            agentName: "Formatting Agent",
+            decision: {
+                reason: "Structuring output for final PDF generation",
+                cost: "0.05"
+            }
+        }
     ];
 
-    // 7. Execute payments
+    // 7. Execute payments (Loop)
     for (const pay of payments) {
         console.log(`➡️ Paying ${pay.agentName}`);
 
@@ -134,6 +235,7 @@ export async function runResearchTask(
             task: pay.task,
             agentName: pay.agentName,
             amount: pay.amount,
+            decision: pay.decision,
             status: "pending"
         });
 
