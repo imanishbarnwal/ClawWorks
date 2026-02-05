@@ -1,4 +1,4 @@
-import registry from '../../agent_registry.json';
+import registry from '../config/agent_registry.json';
 
 export type AgentRoleKey = keyof typeof registry;
 

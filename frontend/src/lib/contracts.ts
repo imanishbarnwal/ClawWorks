@@ -14,4 +14,4 @@ export const ROUTER_ABI = [
 ];
 
 // Monad Testnet Deployment
-export const PROTOCOL_ROUTER_ADDRESS = "0xD72De456b2Aa5217a4Fd2E4d64443Ac92FA28791"; 
+export const PROTOCOL_ROUTER_ADDRESS = "0x792F254D0256Dab8CC8eB9eD16A26c3bCEEda4Bf";

@@ -5,7 +5,7 @@ For the hackathon, we use a **Static Registry Approach** to link the payment lay
 This avoids complex on-chain registries or governance contracts. The frontend and scripts simply read a JSON file to know which token belongs to which agent.
 
 ## The Registry File
-We use `agent_registry.json` as the single source of truth.
+We use `frontend/src/config/agent_registry.json` as the single source of truth.
 
 ### Schema
 ```json

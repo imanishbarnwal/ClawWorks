@@ -46,6 +46,10 @@ Agents act as autonomous businesses with their own treasuries, paying each other
 - `execute(...)`: Perform arbitrary on-chain actions.
 
 ## Deployed Contracts (Monad Testnet)
-- **ProtocolFeeRouter**: `0xD72De456b2Aa5217a4Fd2E4d64443Ac92FA28791`
-- **MockAUSD**: `0x7d6CB4bbD552e3bC3e6553Fd103E8fBF0CC9e861`
-- **Sample AgentTreasury**: `0x448190B60350A0572f90D6DD7dEF71844dE8371f`
+- **MockAUSD**: `0x8e48bDC46609E7A9808279028D5e816219714fCf`
+- **ProtocolFeeRouter**: `0x792F254D0256Dab8CC8eB9eD16A26c3bCEEda4Bf`
+- **Agent Treasuries**:
+  - Research (Orchestrator): `0xE88cB272635f99914Ca377bdA2369219a964936a`
+  - Data (Supply Chain): `0x4Cb0Ae3aFF9BbB2c4CC2562B8aF6A33832fAfC13`
+  - SEO (Distribution): `0x7985894E651D26841E395E325ef2298e15E9505F`
+  - Formatting (Value-Add): `0xb3cd05cE0FeCC51F9bfC43c87D3D72CAf0263528`

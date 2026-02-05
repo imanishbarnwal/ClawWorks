@@ -1,0 +1,30 @@
+{
+  "research_agent": {
+    "role": "Orchestrator",
+    "treasury_address": "0xE88cB272635f99914Ca377bdA2369219a964936a",
+    "token_address": "",
+    "token_symbol": "$CORE",
+    "token_name": "Claw Core"
+  },
+  "data_agent": {
+    "role": "Supply Chain",
+    "treasury_address": "0x4Cb0Ae3aFF9BbB2c4CC2562B8aF6A33832fAfC13",
+    "token_address": "",
+    "token_symbol": "$SOURCE",
+    "token_name": "Claw Source"
+  },
+  "seo_agent": {
+    "role": "Distribution",
+    "treasury_address": "0x7985894E651D26841E395E325ef2298e15E9505F",
+    "token_address": "",
+    "token_symbol": "$REACH",
+    "token_name": "Claw Reach"
+  },
+  "formatting_agent": {
+    "role": "Value-Add",
+    "treasury_address": "0xb3cd05cE0FeCC51F9bfC43c87D3D72CAf0263528",
+    "token_address": "",
+    "token_symbol": "$POLISH",
+    "token_name": "Claw Polish"
+  }
+}

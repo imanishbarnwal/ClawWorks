@@ -1,89 +1,105 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import { AGENT_REGISTRY, AGENT_IDS, AgentRoleKey } from "@/lib/registry";
+import { useReadContracts } from 'wagmi';
+import { formatUnits } from 'viem';
+import { AGENT_REGISTRY, AGENT_IDS } from "@/lib/registry";
+import { useEffect } from 'react';
 import { ERC20_ABI, ROUTER_ABI, PROTOCOL_ROUTER_ADDRESS } from "@/lib/contracts";
 
 // Helper to format balance to 2 decimal places
-const formatBal = (val: string) => {
+const formatBal = (val: string | undefined) => {
+    if (!val) return "0.00";
     const num = parseFloat(val);
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 export function BalancesTable() {
-    const [balances, setBalances] = useState<Record<string, string>>({});
-    const [protocolBalance, setProtocolBalance] = useState<string>("0.0");
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // 1. Fetch Configuration from Router (Payment Token & Protocol Treasury Address)
+    const routerConfig = useReadContracts({
+        contracts: [
+            {
+                address: PROTOCOL_ROUTER_ADDRESS as `0x${string}`,
+                abi: ROUTER_ABI as any, // Cast to any to avoid strict ABI typing issues with human-readable array
+                functionName: 'paymentToken',
+            },
+            {
+                address: PROTOCOL_ROUTER_ADDRESS as `0x${string}`,
+                abi: ROUTER_ABI as any,
+                functionName: 'protocolTreasury',
+            }
+        ]
+    });
+
+    const paymentToken = routerConfig.data?.[0].result as `0x${string}` | undefined;
+    const protocolTreasury = routerConfig.data?.[1].result as `0x${string}` | undefined;
+
+    // 2. Prepare Balance Calls
+    // We need balances for: All Agents + Protocol Treasury
+    const agentAddresses = AGENT_IDS.map(id => AGENT_REGISTRY[id].treasury_address);
+    // Add Protocol Treasury to the list of queries if available
+    const targets = protocolTreasury ? [...agentAddresses, protocolTreasury] : agentAddresses;
+
+    const { data: balanceData, isLoading: isBalLoading, isError: isBalError } = useReadContracts({
+        contracts: targets.map(target => ({
+            address: paymentToken,
+            abi: ERC20_ABI as any,
+            functionName: 'balanceOf',
+            args: [target],
+        })),
+        query: {
+            enabled: !!paymentToken && targets.length > 0,
+            refetchInterval: 3000, // Auto-refresh every 3s
+        }
+    });
+
+    const isLoading = routerConfig.isLoading || isBalLoading;
+    const isError = routerConfig.isError || isBalError;
+
+    // Debug logging
+    useEffect(() => {
+        if (routerConfig.data) {
+            console.log("Read: Router Config", {
+                paymentToken: routerConfig.data[0].result,
+                protocolTreasury: routerConfig.data[1].result
+            });
+        }
+        if (routerConfig.error) {
+            console.error("Read Error: Router Config", routerConfig.error);
+        }
+    }, [routerConfig.data, routerConfig.error]);
 
     useEffect(() => {
-        const fetchBalances = async () => {
-            // 1. Check for Ethereum provider
-            if (!window.ethereum) {
-                // Silent return if no wallet, or show "Connect Wallet" state
-                return;
+        if (balanceData) {
+            console.log("Read: Balances", balanceData);
+        }
+        if (isBalError) {
+            console.error("Read Error: Balances", isBalError);
+        }
+    }, [balanceData, isBalError]);
+
+    // Map results back to IDs
+    const agentBalances: Record<string, string> = {};
+
+    if (balanceData) {
+        AGENT_IDS.forEach((id, index) => {
+            const result = balanceData[index];
+            if (result.status === 'success' && result.result) {
+                // Assuming 18 decimals for AUSD
+                agentBalances[id] = formatUnits(result.result as bigint, 18);
+            } else {
+                agentBalances[id] = "0.0";
             }
+        });
+    }
 
-            // 2. Setup Provider
-            const provider = new ethers.BrowserProvider(window.ethereum);
-
-            // 3. Verify Router Address
-            if (PROTOCOL_ROUTER_ADDRESS === "0x0000000000000000000000000000000000000000") {
-                setError("Router Address not set in code.");
-                return;
-            }
-
-            setIsLoading(true);
-            try {
-                const router = new ethers.Contract(PROTOCOL_ROUTER_ADDRESS, ROUTER_ABI, provider);
-
-                // 4. Fetch Core Addresses from Router
-                const ausdAddress = await router.paymentToken();
-                const protocolTreasuryAddress = await router.protocolTreasury();
-
-                // 5. Setup Token Contract
-                const ausd = new ethers.Contract(ausdAddress, ERC20_ABI, provider);
-
-                // 6. Fetch Protocol Treasury Balance
-                const pBal = await ausd.balanceOf(protocolTreasuryAddress);
-                setProtocolBalance(ethers.formatEther(pBal));
-
-                // 7. Fetch Agent Balances
-                const newBalances: Record<string, string> = {};
-
-                // Use Promise.all for parallel fetching
-                await Promise.all(AGENT_IDS.map(async (agentKey) => {
-                    const agent = AGENT_REGISTRY[agentKey];
-                    if (!agent.treasury_address) {
-                        newBalances[agentKey] = "0.0";
-                        return;
-                    }
-                    try {
-                        const bal = await ausd.balanceOf(agent.treasury_address);
-                        newBalances[agentKey] = ethers.formatEther(bal);
-                    } catch (e) {
-                        console.error(`Failed to fetch balance for ${agentKey}`, e);
-                        newBalances[agentKey] = "Err";
-                    }
-                }));
-
-                setBalances(newBalances);
-                setError(null);
-
-            } catch (err) {
-                console.error("Error fetching blockchain data:", err);
-                setError("Failed to load chain data.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchBalances();
-        // Poll every 5 seconds
-        const interval = setInterval(fetchBalances, 5000);
-        return () => clearInterval(interval);
-    }, []);
+    // Protocol Balance is the last item if we added it
+    let protocolBalance = "0.0";
+    if (protocolTreasury && balanceData && balanceData.length > AGENT_IDS.length) {
+        const result = balanceData[AGENT_IDS.length];
+        if (result.status === 'success' && result.result) {
+            protocolBalance = formatUnits(result.result as bigint, 18);
+        }
+    }
 
     return (
         <div className="w-full max-w-sm border border-gray-800 rounded-lg p-6 bg-gray-900/50 backdrop-blur-sm h-fit shadow-xl">
@@ -92,16 +108,16 @@ export function BalancesTable() {
                 {isLoading && <span className="text-xs text-blue-400 animate-pulse">Syncing...</span>}
             </div>
 
-            {error && (
+            {isError && (
                 <div className="mb-4 p-2 bg-red-900/20 border border-red-800 rounded text-xs text-red-300">
-                    {error}
+                    Failed to load blockchain data. Switched to offline mode.
                 </div>
             )}
 
-            <div className="space-y-3 text-sm">
+            <div className={`space-y-3 text-sm ${isLoading && !balanceData ? 'opacity-50 blur-sm' : ''}`}>
                 {AGENT_IDS.map((key) => {
                     const agent = AGENT_REGISTRY[key];
-                    const rawBal = balances[key] || "0.0";
+                    const rawBal = agentBalances[key];
                     return (
                         <div key={key} className="flex justify-between items-center border-b border-gray-800 pb-2 last:border-0 hover:bg-white/5 px-2 rounded transition-colors">
                             <div>
