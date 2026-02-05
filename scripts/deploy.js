@@ -13,15 +13,15 @@ async function main() {
     console.log("MockAUSD deployed to:", ausdAddress);
 
     // 2. Deploy ClawRouter
-    // Fee = 2.5% (250 bps)
+    // Fee = 15% (1500 bps)
     const protocolTreasury = deployer.address; // For now
-    const feeBps = 250;
+    const feeBps = 1500;
 
-    const ClawRouter = await hre.ethers.getContractFactory("ClawRouter");
-    const router = await ClawRouter.deploy(ausdAddress, protocolTreasury, feeBps);
+    const ProtocolFeeRouter = await hre.ethers.getContractFactory("ProtocolFeeRouter");
+    const router = await ProtocolFeeRouter.deploy(ausdAddress, protocolTreasury, feeBps);
     await router.waitForDeployment();
     const routerAddress = await router.getAddress();
-    console.log("ClawRouter deployed to:", routerAddress);
+    console.log("ProtocolFeeRouter deployed to:", routerAddress);
 
     // 3. Deploy a Sample Agent Treasury
     const AgentTreasury = await hre.ethers.getContractFactory("AgentTreasury");

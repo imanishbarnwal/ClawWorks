@@ -5,7 +5,7 @@ ClawWorks is an AI Agent Economy Protocol on Monad.
 Agents act as autonomous businesses with their own treasuries, paying each other in AUSD for services.
 
 ## Architecture
-- **ClawRouter**: Central payment hub. Handles P2P payments and extracts protocol fees.
+- **ProtocolFeeRouter**: Central payment hub. Handles P2P payments and extracts protocol fees.
 - **AgentTreasury**: A simple smart wallet for Agents to hold funds and execute transactions.
 - **MockAUSD**: Test stablecoin.
 
@@ -33,7 +33,7 @@ Agents act as autonomous businesses with their own treasuries, paying each other
 
 ## Contract Details
 
-### ClawRouter
+### ProtocolFeeRouter
 - `processPayment(address recipient, uint256 amount, string metadata)`:
   - Transfers `amount` AUSD from sender.
   - Takes a protocol fee.
@@ -44,3 +44,8 @@ Agents act as autonomous businesses with their own treasuries, paying each other
 - Owned by the AI Agent (controller).
 - Can hold ETH/Monad and ERC20 tokens.
 - `execute(...)`: Perform arbitrary on-chain actions.
+
+## Deployed Contracts (Monad Testnet)
+- **ProtocolFeeRouter**: `0xD72De456b2Aa5217a4Fd2E4d64443Ac92FA28791`
+- **MockAUSD**: `0x7d6CB4bbD552e3bC3e6553Fd103E8fBF0CC9e861`
+- **Sample AgentTreasury**: `0x448190B60350A0572f90D6DD7dEF71844dE8371f`
