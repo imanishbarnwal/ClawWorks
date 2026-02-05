@@ -37,7 +37,24 @@ export function Timeline() {
                                     <div className="bg-purple-900/10 border-l-2 border-purple-500 pl-2 py-1 my-2 rounded-r text-xs">
                                         <div className="text-purple-300 font-semibold mb-0.5">Agent Decision Protocol:</div>
                                         <div className="text-gray-400">Reason: <span className="italic text-gray-300">{log.decision.reason}</span></div>
-                                        <div className="text-gray-400">Est. Cost: <span className="font-mono text-purple-300">{log.decision.cost} AUSD</span></div>
+                                        <div className="flex gap-3 mt-1">
+                                            <div className="text-gray-400">Cost: <span className="font-mono text-purple-300">{log.decision.cost} AUSD</span></div>
+                                            {log.decision.executionTime && (
+                                                <div className="text-gray-400">⏱ <span className="text-blue-300 font-mono">{log.decision.executionTime}</span></div>
+                                            )}
+                                        </div>
+                                        {log.decision.confidenceScore && (
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-gray-500 text-[10px]">CONFIDENCE</span>
+                                                <div className="h-1.5 w-16 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+                                                    <div
+                                                        className={`h-full ${log.decision.confidenceScore > 90 ? 'bg-emerald-500' : 'bg-yellow-500'}`}
+                                                        style={{ width: `${log.decision.confidenceScore}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-[10px] text-gray-300">{log.decision.confidenceScore}%</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -54,6 +71,38 @@ export function Timeline() {
                                     >
                                         Tx: {log.txHash.slice(0, 6)}...{log.txHash.slice(-4)}
                                     </a>
+                                )}
+
+                                {log.output && (
+                                    <details className="mt-2 group open:bg-gray-900/30 rounded-lg transition-colors p-1">
+                                        <summary className="text-[10px] uppercase tracking-wider font-semibold text-emerald-500 cursor-pointer list-none flex items-center gap-1.5 select-none hover:text-emerald-400 p-1">
+                                            <span className="group-open:rotate-90 transition-transform duration-200">▶</span>
+                                            View Agent Output
+                                        </summary>
+                                        <div className="mt-1 text-xs bg-black/50 border border-gray-800 rounded p-3 font-mono text-gray-300 shadow-inner animate-in slide-in-from-top-1 duration-200">
+                                            <div className="whitespace-pre-wrap leading-relaxed opacity-90">
+                                                {log.output}
+                                            </div>
+
+                                            {log.agentName.includes("Formatting") && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // prevent closing detail if clicked
+                                                        const blob = new Blob([log.output!], { type: 'text/markdown' });
+                                                        const url = URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = `ClawWorks-Report-${Date.now()}.md`;
+                                                        a.click();
+                                                        URL.revokeObjectURL(url);
+                                                    }}
+                                                    className="mt-4 text-[10px] font-semibold bg-emerald-600/90 hover:bg-emerald-500 text-white px-4 py-2 rounded-md transition-all flex items-center gap-2 shadow-lg hover:shadow-emerald-500/20 w-fit"
+                                                >
+                                                    📄 Download Final Report
+                                                </button>
+                                            )}
+                                        </div>
+                                    </details>
                                 )}
                             </div>
                         </div>

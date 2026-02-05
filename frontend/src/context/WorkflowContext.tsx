@@ -10,9 +10,12 @@ export interface LogEntry {
     txHash?: string;
     status: "pending" | "success" | "error";
     timestamp: string;
+    output?: string;
     decision?: {
         reason: string;
         cost: string;
+        confidenceScore?: number;
+        executionTime?: string;
     };
 }
 

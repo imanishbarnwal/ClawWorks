@@ -6,19 +6,31 @@ import { useWorkflow } from "@/context/WorkflowContext";
 // Removed wagmi imports to ensure clean separation as requested in earlier steps
 // import { useAccount } from "wagmi";
 
-export default function RunResearchButton() {
+export default function RunResearchButton({
+    onPaymentComplete,
+    taskInput
+}: {
+    onPaymentComplete?: () => Promise<void>;
+    taskInput: string;
+}) {
     // const { isConnected } = useAccount(); // Connection check is now implicit in runResearchTask
     const { addLog, clearLogs } = useWorkflow();
     const [loading, setLoading] = useState(false);
 
     async function handleClick() {
+        if (!taskInput.trim()) return;
+
         try {
             setLoading(true);
             clearLogs(); // Clear previous runs
 
-            await runResearchTask((log) => {
-                addLog(log);
-            });
+            await runResearchTask(
+                taskInput,
+                (log) => {
+                    addLog(log);
+                },
+                onPaymentComplete
+            );
 
         } catch (err: any) {
             console.error(err);
@@ -32,8 +44,8 @@ export default function RunResearchButton() {
         <div className="flex flex-col items-center gap-2">
             <button
                 onClick={handleClick}
-                disabled={loading}
-                className={`rounded-xl px-6 py-3 text-white font-semibold transition-all shadow-lg ${loading
+                disabled={loading || !taskInput.trim()}
+                className={`rounded-xl px-6 py-3 text-white font-semibold transition-all shadow-lg ${loading || !taskInput.trim()
                     ? "bg-blue-800 cursor-not-allowed opacity-75"
                     : "bg-blue-600 hover:bg-blue-700 hover:shadow-blue-500/25"
                     }`}

@@ -1,9 +1,15 @@
+"use client";
+
 import { BalancesTable } from "@/components/BalancesTable";
 import { Timeline } from "@/components/Timeline";
 import RunResearchButton from "@/components/RunResearchButton";
 import ConnectButton from "@/components/ConnectButton";
+import { useRef, useState } from "react";
 
 export default function Home() {
+    const treasuriesRefetcher = useRef<null | (() => Promise<void>)>(null);
+    const [taskInput, setTaskInput] = useState("");
+
     return (
         <main className="flex min-h-screen flex-col items-center p-12 bg-gray-950 text-white">
             <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex mb-12">
@@ -28,8 +34,22 @@ export default function Home() {
                     involved in a complex supply chain.
                 </p>
 
+                <textarea
+                    value={taskInput}
+                    onChange={(e) => setTaskInput(e.target.value)}
+                    placeholder="Describe the task you want the agents to perform..."
+                    className="w-full max-w-md bg-gray-800/50 border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 mb-6 focus:ring-2 focus:ring-blue-500 outline-none resize-none h-24 shadow-inner"
+                />
+
                 {/* ✅ Client-side interactive button */}
-                <RunResearchButton />
+                <RunResearchButton
+                    taskInput={taskInput}
+                    onPaymentComplete={async () => {
+                        if (treasuriesRefetcher.current) {
+                            await treasuriesRefetcher.current();
+                        }
+                    }}
+                />
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl">
@@ -37,7 +57,12 @@ export default function Home() {
                     <Timeline />
                 </div>
                 <div className="lg:w-1/3">
-                    <BalancesTable />
+                    <BalancesTable
+                        onRefetchReady={(fn) => {
+                            treasuriesRefetcher.current = fn;
+                            console.log("✅ Treasuries refetch registered");
+                        }}
+                    />
                 </div>
             </div>
         </main>

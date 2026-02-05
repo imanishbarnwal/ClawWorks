@@ -13,7 +13,11 @@ const formatBal = (val: string | undefined) => {
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-export function BalancesTable() {
+interface BalancesTableProps {
+    onRefetchReady?: (refetchFn: () => Promise<void>) => void;
+}
+
+export function BalancesTable({ onRefetchReady }: BalancesTableProps) {
     // 1. Fetch Configuration from Router (Payment Token & Protocol Treasury Address)
     const routerConfig = useReadContracts({
         contracts: [
@@ -61,7 +65,7 @@ export function BalancesTable() {
     // Add Protocol Treasury to the list of queries if available
     const targets = protocolTreasury ? [...agentAddresses, protocolTreasury] : agentAddresses;
 
-    const { data: balanceData, isLoading: isBalLoading, isError: isBalError } = useReadContracts({
+    const { data: balanceData, isLoading: isBalLoading, isError: isBalError, refetch: refetchBalances } = useReadContracts({
         contracts: targets.map(target => ({
             address: paymentToken,
             abi: ERC20_ABI as any,
@@ -70,12 +74,28 @@ export function BalancesTable() {
         })),
         query: {
             enabled: !!paymentToken && targets.length > 0,
-            refetchInterval: 3000, // Auto-refresh every 3s
         }
     });
 
     const isLoading = routerConfig.isLoading || isBalLoading;
     const isError = routerConfig.isError || isBalError;
+
+    // Manual refetch trigger
+    const refetchAllTreasuries = async () => {
+        await Promise.all([
+            routerConfig.refetch(),
+            tokenConfig.refetch(),
+            refetchBalances()
+        ]);
+    };
+
+    // Expose refetch function to parent
+    useEffect(() => {
+        if (onRefetchReady) {
+            onRefetchReady(refetchAllTreasuries);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onRefetchReady]);
 
     // Debug logging
     useEffect(() => {
